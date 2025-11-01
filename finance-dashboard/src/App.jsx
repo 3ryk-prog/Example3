@@ -8,6 +8,7 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
+  Legend,
 } from "recharts";
 
 function App() {
@@ -24,44 +25,45 @@ function App() {
     return data;
   };
 
+  const getDays = () => (range === "7d" ? 7 : range === "30d" ? 30 : 365);
+
   const dataMap = {
     currency: {
-      EUR: generateData(4.2, 0.05, range === "7d" ? 7 : range === "30d" ? 30 : 365),
-      USD: generateData(3.9, 0.05, range === "7d" ? 7 : range === "30d" ? 30 : 365),
-      GBP: generateData(5.1, 0.05, range === "7d" ? 7 : range === "30d" ? 30 : 365),
+      EUR: generateData(4.2, 0.05, getDays()),
+      USD: generateData(3.9, 0.05, getDays()),
+      GBP: generateData(5.1, 0.05, getDays()),
     },
     crypto: {
-      BTC: generateData(65000, 800, range === "7d" ? 7 : range === "30d" ? 30 : 365),
-      ETH: generateData(3200, 80, range === "7d" ? 7 : range === "30d" ? 30 : 365),
-      SOL: generateData(160, 10, range === "7d" ? 7 : range === "30d" ? 30 : 365),
+      BTC: generateData(65000, 800, getDays()),
+      ETH: generateData(3200, 80, getDays()),
+      SOL: generateData(160, 10, getDays()),
     },
     stocks: {
-      AAPL: generateData(185, 3, range === "7d" ? 7 : range === "30d" ? 30 : 365),
-      TSLA: generateData(255, 10, range === "7d" ? 7 : range === "30d" ? 30 : 365),
-      NVDA: generateData(460, 8, range === "7d" ? 7 : range === "30d" ? 30 : 365),
+      AAPL: generateData(185, 3, getDays()),
+      TSLA: generateData(255, 10, getDays()),
+      NVDA: generateData(460, 8, getDays()),
     },
   };
 
-  const ChartBox = ({ title, data, color }) => {
-    const values = data.map((d) => d.value);
-    const max = Math.max(...values);
-    const min = Math.min(...values);
-    const diff = ((values[values.length - 1] - values[0]) / values[0]) * 100;
+  const colors = {
+    currency: ["#4ade80", "#60a5fa", "#facc15"],
+    crypto: ["#f59e0b", "#22d3ee", "#a855f7"],
+    stocks: ["#f87171", "#4ade80", "#60a5fa"],
+  };
+
+  const CombinedChart = ({ title, dataSet, colorSet }) => {
+    const allData = Object.keys(dataSet).map((key) => ({
+      name: key,
+      data: dataSet[key],
+    }));
 
     return (
-      <div className="chart-box wide">
+      <div className="chart-box full">
         <div className="chart-header">
           <h3>{title}</h3>
-          <div className="stats">
-            <p>📈 High: {max.toFixed(2)}</p>
-            <p>📉 Low: {min.toFixed(2)}</p>
-            <p className={diff >= 0 ? "positive" : "negative"}>
-              {diff >= 0 ? "▲" : "▼"} {diff.toFixed(2)}%
-            </p>
-          </div>
         </div>
-        <ResponsiveContainer width="100%" height={350}>
-          <LineChart data={data}>
+        <ResponsiveContainer width="100%" height={500}>
+          <LineChart>
             <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
             <XAxis dataKey="name" stroke="#ccc" />
             <YAxis stroke="#ccc" />
@@ -71,29 +73,23 @@ function App() {
                 border: "1px solid #4ade80",
               }}
             />
-            <Line
-              type="monotone"
-              dataKey="value"
-              stroke={color}
-              strokeWidth={3}
-              dot={{ fill: color }}
-              activeDot={{ r: 6 }}
-            />
+            <Legend />
+            {allData.map((entry, i) => (
+              <Line
+                key={i}
+                type="monotone"
+                data={entry.data}
+                dataKey="value"
+                stroke={colorSet[i]}
+                name={entry.name}
+                strokeWidth={3}
+                dot={false}
+              />
+            ))}
           </LineChart>
         </ResponsiveContainer>
       </div>
     );
-  };
-
-  const renderCharts = () => {
-    const colors = {
-      currency: "#4ade80",
-      crypto: "#60a5fa",
-      stocks: "#facc15",
-    };
-    return Object.keys(dataMap[section]).map((key, i) => (
-      <ChartBox key={i} title={key} data={dataMap[section][key]} color={colors[section]} />
-    ));
   };
 
   return (
@@ -135,7 +131,7 @@ function App() {
         </div>
       </aside>
 
-      <main className="content">
+      <main className="content wide">
         <div className="top-bar">
           <h2>
             {section === "currency"
@@ -149,7 +145,17 @@ function App() {
           </button>
         </div>
 
-        <div className="charts-container">{renderCharts()}</div>
+        <CombinedChart
+          title={
+            section === "currency"
+              ? "Currency Comparison"
+              : section === "crypto"
+              ? "Crypto Performance"
+              : "Stock Trends"
+          }
+          dataSet={dataMap[section]}
+          colorSet={colors[section]}
+        />
       </main>
     </div>
   );
